@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우주파편 비접촉식 제거(이온 분사 방식) 가상 실험실</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700&display=swap');
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background-color: #0b0f19;
+      color: #e2e8f0;
+    }
+    .neon-border {
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+    .neon-text-blue {
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    }
+    .neon-text-cyan {
+      text-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+  <!-- Header / Navigation -->
+  <header class="bg-slate-900/90 border-b border-slate-800 backdrop-blur sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/30 text-cyan-400">
+          <i class="fa-solid me-1 fa-atom text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+            우주파편 비접촉식 제거 기술 <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">이온 분사 방식 (IBS)</span>
+          </h1>
+          <p class="text-xs text-slate-400">고등학교 물리/과학전람회 탐구용 가상 실험실</p>
+        </div>
+      </div>
+
+      <!-- Mode Selector Tabs -->
+      <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <button id="tabMode1" onclick="switchMode(1)" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 bg-cyan-600 text-white shadow-lg">
+          <i class="fa-solid fa-flask-vial mr-1.5"></i>모드 1: 지상 이온풍 실험 (Analogy)
+        </button>
+        <button id="tabMode2" onclick="switchMode(2)" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 text-slate-400 hover:text-white">
+          <i class="fa-solid fa-satellite mr-1.5"></i>모드 2: LEO 우주 궤도 시뮬레이션
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl w-full mx-auto p-4 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- Left Controls & Gauges Panel (4 Columns on LG) -->
+    <section class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- MODE 1 CONTROLS -->
+      <div id="controlsMode1" class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col gap-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+            <i class="fa-solid fa-sliders"></i> 실험 변수 제어 (Lab Controls)
+          </h2>
+          <span class="text-xs px-2 py-0.5 bg-slate-800 text-slate-300 rounded-full">지상 실험</span>
+        </div>
+
+        <!-- Measurement Method Toggle -->
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">측정 방식 선택</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnScale" onclick="setMeasureMethod('scale')" class="py-2 px-3 text-xs font-semibold rounded-lg border transition-all bg-cyan-950/80 border-cyan-500 text-cyan-300">
+              <i class="fa-solid fa-weight-hanging mr-1"></i>전자저울 (수직력)
+            </button>
+            <button id="btnPendulum" onclick="setMeasureMethod('pendulum')" class="py-2 px-3 text-xs font-semibold rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200">
+              <i class="fa-solid fa-arrows-left-right mr-1"></i>단진자 각도 (수평력)
+            </button>
+          </div>
+        </div>
+
+        <!-- Voltage / Power -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">인가 전압 (Voltage)</span>
+            <span id="valVoltage" class="font-mono text-cyan-400 font-bold">6.0 kV</span>
+          </div>
+          <input type="range" id="sliderVoltage" min="1.0" max="12.0" step="0.5" value="6.0" oninput="updateLabParams()" class="w-full accent-cyan-400 bg-slate-950 rounded-lg h-2 cursor-pointer">
+        </div>
+
+        <!-- Distance -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">방출 침-파편 간 거리 (Distance d)</span>
+            <span id="valDistance" class="font-mono text-cyan-400 font-bold">4.0 cm</span>
+          </div>
+          <input type="range" id="sliderDistance" min="1.5" max="10.0" step="0.5" value="4.0" oninput="updateLabParams()" class="w-full accent-cyan-400 bg-slate-950 rounded-lg h-2 cursor-pointer">
+        </div>
+
+        <!-- Target Shape & Material -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">파편 단면 형상</label>
+            <select id="selectShape" onchange="updateLabParams()" class="w-full bg-slate-950 text-xs border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-cyan-500">
+              <option value="sphere">구형 (Sphere)</option>
+              <option value="flat">평면판 (Flat Plate)</option>
+              <option value="irregular" selected>불규칙형 (Irregular)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">표면 재질</label>
+            <select id="selectMaterial" onchange="updateLabParams()" class="w-full bg-slate-950 text-xs border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-cyan-500">
+              <option value="insulator" selected>부도체 (스티로폼)</option>
+              <option value="conductor">도체 (알루미늄박)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Simulation Power Switch -->
+        <div class="pt-2 flex gap-2">
+          <button id="btnPower1" onclick="toggleLabPower()" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center justify-center gap-2">
+            <i class="fa-solid fa-power-off"></i> <span id="lblPower1">고전압 가동 (HV ON)</span>
+          </button>
+          <button onclick="recordLabData()" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl text-cyan-300 border border-slate-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> 데이터 기록
+          </button>
+        </div>
+      </div>
+
+      <!-- MODE 2 CONTROLS -->
+      <div id="controlsMode2" class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col gap-4 hidden">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+            <i class="fa-solid fa-earth-americas"></i> 궤도 파라미터 제어
+          </h2>
+          <span class="text-xs px-2 py-0.5 bg-slate-800 text-slate-300 rounded-full">실제 LEO</span>
+        </div>
+
+        <!-- Ion Thrust Force -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">이온 분사 추력 (Ion Beam Thrust)</span>
+            <span id="valThrust" class="font-mono text-cyan-400 font-bold">15 mN</span>
+          </div>
+          <input type="range" id="sliderThrust" min="1" max="50" step="1" value="15" oninput="updateSpaceParams()" class="w-full accent-cyan-400 bg-slate-950 rounded-lg h-2 cursor-pointer">
+        </div>
+
+        <!-- Debris Mass -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">우주파편 질량 (Mass)</span>
+            <span id="valMass" class="font-mono text-cyan-400 font-bold">50 kg</span>
+          </div>
+          <input type="range" id="sliderMass" min="10" max="200" step="5" value="50" oninput="updateSpaceParams()" class="w-full accent-cyan-400 bg-slate-950 rounded-lg h-2 cursor-pointer">
+        </div>
+
+        <!-- Initial Altitude -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">초기 궤도 고도 (Initial Altitude)</span>
+            <span id="valAltitude" class="font-mono text-cyan-400 font-bold">600 km</span>
+          </div>
+          <input type="range" id="sliderAltitude" min="300" max="1000" step="25" value="600" oninput="updateSpaceParams()" class="w-full accent-cyan-400 bg-slate-950 rounded-lg h-2 cursor-pointer">
+        </div>
+
+        <!-- Orbital Simulation Speed & Actions -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">시뮬레이션 배속</span>
+            <span id="valSimSpeed" class="font-mono text-cyan-400 font-bold">100x</span>
+          </div>
+          <input type="range" id="sliderSimSpeed" min="10" max="500" step="10" value="100" oninput="updateSpaceParams()" class="w-full accent-cyan-400 bg-slate-950 rounded-lg h-2 cursor-pointer">
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <button id="btnOrbitStart" onclick="toggleOrbitSim()" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i> <span id="lblOrbitStart">궤도 시뮬레이션 시작</span>
+          </button>
+          <button onclick="resetOrbitSim()" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl text-slate-300 border border-slate-700">
+            <i class="fa-solid fa-rotate-left"></i> 리셋
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Dashboard / Measurement Gauge Cards -->
+      <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-gauge-high text-cyan-400"></i> 실시간 계측 데이터 (Live Gauges)
+        </h3>
+
+        <!-- Mode 1 Gauges -->
+        <div id="gaugesMode1" class="grid grid-cols-2 gap-2">
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+            <span class="text-[10px] text-slate-400 block mb-0.5">측정된 미세 추력 ($F$)</span>
+            <span id="dispForce" class="text-base font-bold font-mono text-cyan-400">0.000 mN</span>
+            <span id="dispGram" class="text-[10px] text-slate-500 block">≈ 0.000 g 힘</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+            <span id="lblGaugeSecondary" class="text-[10px] text-slate-400 block mb-0.5">저울 변위량 ($\Delta m$)</span>
+            <span id="dispSecondary" class="text-base font-bold font-mono text-emerald-400">0.000 g</span>
+            <span id="dispSubUnit" class="text-[10px] text-slate-500 block">정밀 저울 기준</span>
+          </div>
+        </div>
+
+        <!-- Mode 2 Gauges -->
+        <div id="gaugesMode2" class="grid grid-cols-2 gap-2 hidden">
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+            <span class="text-[10px] text-slate-400 block mb-0.5">현재 궤도 고도 (Altitude)</span>
+            <span id="dispOrbitAlt" class="text-base font-bold font-mono text-cyan-400">600.0 km</span>
+            <span id="dispDeorbitStatus" class="text-[10px] text-amber-400 block">저궤도 선회 중</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+            <span class="text-[10px] text-slate-400 block mb-0.5">궤도 속도 (Velocity)</span>
+            <span id="dispOrbitVel" class="text-base font-bold font-mono text-emerald-400">7.56 km/s</span>
+            <span id="dispElapsedDays" class="text-[10px] text-slate-500 block">경과: 0.0일</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Physics Equation Reference Card -->
+      <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 text-xs text-slate-300 leading-relaxed">
+        <h4 class="font-bold text-slate-200 mb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-square-root-variable text-cyan-400"></i> 물리 원리 및 주요 수식
+        </h4>
+        <div id="eqMode1">
+          <p class="mb-1 text-[11px] text-slate-400">• <b>이온풍 밀어내는 힘:</b> $F \propto \frac{V^2}{d^2}$ (전압 $V$의 제곱에 비례, 거리 $d$의 제곱에 반비례)</p>
+          <p class="text-[11px] text-slate-400">• <b>단진자 각도 해석:</b> $F = m \cdot g \cdot \tan\theta \approx m \cdot g \cdot \frac{x}{L}$</p>
+        </div>
+        <div id="eqMode2" class="hidden">
+          <p class="mb-1 text-[11px] text-slate-400">• <b>운동량 전달 및 연속 미세 감속:</b> $\Delta p = F_{ion} \cdot \Delta t$</p>
+          <p class="text-[11px] text-slate-400">• <b>궤도 고도 하락율:</b> 미세 감속이 역방향 지속 작용 시 궤도 에너지 감소로 고도 $h$ 지속 강하</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Canvas & Interactive Simulation Area (8 Columns on LG) -->
+    <section class="lg:col-span-8 flex flex-col gap-4">
+
+      <!-- Main Canvas Card -->
+      <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-3 relative flex flex-col items-center justify-center min-h-[380px] overflow-hidden neon-border">
+        <!-- Canvas Status Badge Overlay -->
+        <div class="absolute top-4 left-4 z-10 flex gap-2">
+          <span id="badgeStatus" class="bg-slate-950/80 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full text-xs font-mono flex items-center gap-1.5 backdrop-blur">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span id="txtCanvasStatus">지상 이온풍 실험 모드 준비 완료</span>
+          </span>
+        </div>
+
+        <!-- Canvas Visual Renderer -->
+        <canvas id="simCanvas" width="800" height="420" class="w-full h-[360px] sm:h-[420px] rounded-xl bg-slate-950 cursor-crosshair"></canvas>
+      </div>
+
+      <!-- Real-time Chart Analysis Panel -->
+      <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <i class="fa-chart-line text-cyan-400"></i> <span id="chartTitle">실시간 거리-힘 실측 그래프 (Distance vs Force)</span>
+          </h3>
+          <button onclick="clearChartData()" class="text-[11px] text-slate-400 hover:text-slate-200 bg-slate-800 px-2.5 py-1 rounded-lg">
+            그래프 초기화
+          </button>
+        </div>
+        <div class="h-44 w-full">
+          <canvas id="analysisChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Lab Report Data Table (High School Lab Record) -->
+      <div id="sectionLabTable" class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col gap-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-table text-cyan-400"></i> 탐구보고서용 실험 측정 기록표 (Data Logger)
+          </h3>
+          <button onclick="exportTableToCSV()" class="text-[11px] bg-cyan-950 border border-cyan-800 text-cyan-300 hover:bg-cyan-900 px-2.5 py-1 rounded-lg flex items-center gap-1">
+            <i class="fa-solid fa-download"></i> CSV 파일 저장
+          </button>
+        </div>
+
+        <div class="overflow-x-auto max-h-40">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-950 text-slate-400 sticky top-0">
+              <tr>
+                <th class="p-2 border-b border-slate-800">회차</th>
+                <th class="p-2 border-b border-slate-800">측정방식</th>
+                <th class="p-2 border-b border-slate-800">전압(kV)</th>
+                <th class="p-2 border-b border-slate-800">거리 d(cm)</th>
+                <th class="p-2 border-b border-slate-800">형상/재질</th>
+                <th class="p-2 border-b border-slate-800">측정값 ($\Delta m / \theta$)</th>
+                <th class="p-2 border-b border-slate-800">계산된 힘 F(mN)</th>
+              </tr>
+            </thead>
+            <tbody id="labTableBody" class="divide-y divide-slate-800 text-slate-300 font-mono">
+              <tr class="hover:bg-slate-800/40">
+                <td colspan="7" class="p-3 text-center text-slate-500 font-sans">아직 기록된 실험 데이터가 없습니다. '데이터 기록' 버튼을 눌러 추가하세요.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950 border-t border-slate-900 py-3 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4">
+      고등학교 물리 탐구활동 및 과학전람회 프로젝트 — 우주파편 비접촉식 제거(Ion Beam Shepherd) 시뮬레이터
+    </div>
+  </footer>
+
+  <!-- Simulation Logic Script -->
+  <script>
+    // --- Global App State ---
+    let currentMode = 1; // 1: Lab, 2: Space Orbit
+    let isLabPowerOn = false;
+    let isOrbitSimRunning = false;
+    let measureMethod = 'scale'; // 'scale' or 'pendulum'
+
+    // Mode 1 State (Ground Lab)
+    let labParams = {
+      voltage: 6.0,      // kV
+      distance: 4.0,     // cm
+      shape: 'irregular',// 'sphere', 'flat', 'irregular'
+      material: 'insulator', // 'insulator', 'conductor'
+      force: 0,          // mN
+      deltaM: 0,         // g
+      angle: 0           // deg
+    };
+
+    // Mode 2 State (Space LEO Orbit)
+    let spaceParams = {
+      thrust: 15,        // mN
+      mass: 50,          // kg
+      altitude: 600,     // km
+      initAltitude: 600,
+      simSpeed: 100,
+      elapsedDays: 0,
+      velocity: 7.56,    // km/s
+      angle: 0           // radians in orbit
+    };
+
+    // Particle Visualizer
+    let ionParticles = [];
+    let labRecordCount = 0;
+
+    // Canvas & Chart References
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    let myChart = null;
+
+    // Initialize Chart.js
+    function initChart() {
+      const chartCtx = document.getElementById('analysisChart').getContext('2d');
+      myChart = new Chart(chartCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: '측정된 힘 F (mN)',
+            data: [],
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#22d3ee'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { size: 11 } } }
+          },
+          scales: {
+            x: {
+              grid: { color: '#1e293b' },
+              ticks: { color: '#64748b', font: { size: 10 } },
+              title: { display: true, text: '거리 d (cm)', color: '#94a3b8', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: '#1e293b' },
+              ticks: { color: '#64748b', font: { size: 10 } },
+              title: { display: true, text: '힘 F (mN)', color: '#94a3b8', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // --- Mode Switching ---
+    function switchMode(mode) {
+      currentMode = mode;
+      const tab1 = document.getElementById('tabMode1');
+      const tab2 = document.getElementById('tabMode2');
+      const controls1 = document.getElementById('controlsMode1');
+      const controls2 = document.getElementById('controlsMode2');
+      const gauges1 = document.getElementById('gaugesMode1');
+      const gauges2 = document.getElementById('gaugesMode2');
+      const eq1 = document.getElementById('eqMode1');
+      const eq2 = document.getElementById('eqMode2');
+      const txtStatus = document.getElementById('txtCanvasStatus');
+      const chartTitle = document.getElementById('chartTitle');
+      const tableSec = document.getElementById('sectionLabTable');
+
+      if (mode === 1) {
+        tab1.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all bg-cyan-600 text-white shadow-lg";
+        tab2.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-400 hover:text-white";
+        controls1.classList.remove('hidden');
+        controls2.classList.add('hidden');
+        gauges1.classList.remove('hidden');
+        gauges2.classList.add('hidden');
+        eq1.classList.remove('hidden');
+        eq2.classList.add('hidden');
+        tableSec.classList.remove('hidden');
+        txtStatus.innerText = "지상 이온풍 실험 모드";
+        chartTitle.innerText = "실시간 거리-힘 실측 그래프 (Distance vs Force)";
+        setupLabChartConfig();
+      } else {
+        tab2.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all bg-cyan-600 text-white shadow-lg";
+        tab1.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-400 hover:text-white";
+        controls2.classList.remove('hidden');
+        controls1.classList.add('hidden');
+        gauges2.classList.remove('hidden');
+        gauges1.classList.add('hidden');
+        eq2.classList.remove('hidden');
+        eq1.classList.add('hidden');
+        tableSec.classList.add('hidden');
+        txtStatus.innerText = "실제 LEO 궤도 하락 시뮬레이션";
+        chartTitle.innerText = "시간 경과에 따른 궤도 고도 하락 (Altitude vs Time)";
+        setupOrbitChartConfig();
+      }
+      clearChartData();
+    }
+
+    // Chart Setup helper
+    function setupLabChartConfig() {
+      if(!myChart) return;
+      myChart.data.datasets[0].label = "측정된 힘 F (mN)";
+      myChart.options.scales.x.title.text = "거리 d (cm)";
+      myChart.options.scales.y.title.text = "힘 F (mN)";
+      myChart.update();
+    }
+
+    function setupOrbitChartConfig() {
+      if(!myChart) return;
+      myChart.data.datasets[0].label = "궤도 고도 Altitude (km)";
+      myChart.options.scales.x.title.text = "경과 시간 (Days)";
+      myChart.options.scales.y.title.text = "고도 (km)";
+      myChart.update();
+    }
+
+    // --- Mode 1: Ground Lab Logic ---
+    function setMeasureMethod(method) {
+      measureMethod = method;
+      const btnScale = document.getElementById('btnScale');
+      const btnPendulum = document.getElementById('btnPendulum');
+      const lblSec = document.getElementById('lblGaugeSecondary');
+      const subUnit = document.getElementById('dispSubUnit');
+
+      if (method === 'scale') {
+        btnScale.className = "py-2 px-3 text-xs font-semibold rounded-lg border transition-all bg-cyan-950/80 border-cyan-500 text-cyan-300";
+        btnPendulum.className = "py-2 px-3 text-xs font-semibold rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200";
+        lblSec.innerText = "저울 변위량 (Δm)";
+        subUnit.innerText = "정밀 저울 기준";
+      } else {
+        btnPendulum.className = "py-2 px-3 text-xs font-semibold rounded-lg border transition-all bg-cyan-950/80 border-cyan-500 text-cyan-300";
+        btnScale.className = "py-2 px-3 text-xs font-semibold rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200";
+        lblSec.innerText = "단진자 변위 각도 (θ)";
+        subUnit.innerText = "실 30cm 기준 각도";
+      }
+      calculateLabPhysics();
+    }
+
+    function updateLabParams() {
+      labParams.voltage = parseFloat(document.getElementById('sliderVoltage').value);
+      labParams.distance = parseFloat(document.getElementById('sliderDistance').value);
+      labParams.shape = document.getElementById('selectShape').value;
+      labParams.material = document.getElementById('selectMaterial').value;
+
+      document.getElementById('valVoltage').innerText = labParams.voltage.toFixed(1) + " kV";
+      document.getElementById('valDistance').innerText = labParams.distance.toFixed(1) + " cm";
+
+      calculateLabPhysics();
+    }
+
+    function toggleLabPower() {
+      isLabPowerOn = !isLabPowerOn;
+      const btn = document.getElementById('btnPower1');
+      const lbl = document.getElementById('lblPower1');
+      if (isLabPowerOn) {
+        btn.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-rose-600 hover:bg-rose-500 text-white shadow-lg flex items-center justify-center gap-2";
+        lbl.innerText = "고전압 차단 (HV OFF)";
+      } else {
+        btn.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center justify-center gap-2";
+        lbl.innerText = "고전압 가동 (HV ON)";
+      }
+      calculateLabPhysics();
+    }
+
+    function calculateLabPhysics() {
+      if (!isLabPowerOn) {
+        labParams.force = 0;
+        labParams.deltaM = 0;
+        labParams.angle = 0;
+      } else {
+        // Physics Analogy Formula: Force proportional to V^2 / d^2 with shape/material multipliers
+        let shapeFactor = 1.0;
+        if (labParams.shape === 'flat') shapeFactor = 1.35; // Larger drag surface
+        if (labParams.shape === 'sphere') shapeFactor = 0.85; // Aerodynamic stream
+
+        let matFactor = (labParams.material === 'conductor') ? 1.25 : 1.0; // Induced charge attraction boost
+
+        // Base constant calibrated for mN output (realistic high school lab range 0.05 ~ 1.5 mN)
+        const k = 0.08;
+        const rawForce = k * (Math.pow(labParams.voltage, 2) / Math.pow(labParams.distance, 1.8)) * shapeFactor * matFactor;
+        
+        labParams.force = rawForce; // mN
+        
+        // Scale mode: Delta m (g) = Force (mN) / (g * 1000)
+        // 1 mN = 0.001 N ≈ 0.102 grams force
+        labParams.deltaM = rawForce * 0.10197; 
+
+        // Pendulum angle: F = m*g*tan(theta). Assuming m = 2.0g debris target
+        const targetMassGram = 2.0; 
+        const tanTheta = (rawForce / 1000) / ( (targetMassGram / 1000) * 9.8 );
+        labParams.angle = Math.atan(tanTheta) * (180 / Math.PI);
+      }
+
+      // Update UI Gauges
+      document.getElementById('dispForce').innerText = labParams.force.toFixed(3) + " mN";
+      document.getElementById('dispGram').innerText = "≈ " + (labParams.force * 0.102).toFixed(3) + " g 힘";
+
+      if (measureMethod === 'scale') {
+        document.getElementById('dispSecondary').innerText = labParams.deltaM.toFixed(3) + " g";
+      } else {
+        document.getElementById('dispSecondary').innerText = labParams.angle.toFixed(2) + " °";
+      }
+    }
+
+    // --- Data Logger ---
+    function recordLabData() {
+      if (currentMode !== 1) return;
+      labRecordCount++;
+
+      const tbody = document.getElementById('labTableBody');
+      if (labRecordCount === 1) tbody.innerHTML = ""; // Clear placeholder
+
+      const shapeTxt = labParams.shape === 'sphere' ? '구형' : labParams.shape === 'flat' ? '평면판' : '불규칙';
+      const matTxt = labParams.material === 'conductor' ? '도체' : '부도체';
+      const measuredVal = measureMethod === 'scale' ? `${labParams.deltaM.toFixed(3)} g` : `${labParams.angle.toFixed(2)}°`;
+
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-slate-800/60 transition-colors";
+      tr.innerHTML = `
+        <td class="p-2 border-b border-slate-800">${labRecordCount}</td>
+        <td class="p-2 border-b border-slate-800">${measureMethod === 'scale' ? '전자저울' : '단진자'}</td>
+        <td class="p-2 border-b border-slate-800">${labParams.voltage.toFixed(1)}</td>
+        <td class="p-2 border-b border-slate-800">${labParams.distance.toFixed(1)}</td>
+        <td class="p-2 border-b border-slate-800">${shapeTxt}/${matTxt}</td>
+        <td class="p-2 border-b border-slate-800 text-emerald-400 font-bold">${measuredVal}</td>
+        <td class="p-2 border-b border-slate-800 text-cyan-400 font-bold">${labParams.force.toFixed(3)}</td>
+      `;
+      tbody.appendChild(tr);
+
+      // Plot point on graph
+      if (myChart) {
+        myChart.data.labels.push(labParams.distance.toFixed(1) + "cm");
+        myChart.data.datasets[0].data.push(labParams.force.toFixed(3));
+        myChart.update();
+      }
+    }
+
+    function clearChartData() {
+      if (!myChart) return;
+      myChart.data.labels = [];
+      myChart.data.datasets[0].data = [];
+      myChart.update();
+    }
+
+    function exportTableToCSV() {
+      let csv = "회차,측정방식,전압(kV),거리(cm),형상_재질,측정값,계산된힘(mN)\n";
+      const rows = document.querySelectorAll("#labTableBody tr");
+      rows.forEach(r => {
+        const cols = r.querySelectorAll("td");
+        if(cols.length >= 7) {
+          const rowData = Array.from(cols).map(c => c.innerText.replace(',', '')).join(",");
+          csv += rowData + "\n";
+        }
+      });
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "이온분사_실험측정기록.csv";
+      link.click();
+    }
+
+    // --- Mode 2: Space Orbit Logic ---
+    function updateSpaceParams() {
+      spaceParams.thrust = parseFloat(document.getElementById('sliderThrust').value);
+      spaceParams.mass = parseFloat(document.getElementById('sliderMass').value);
+      spaceParams.simSpeed = parseFloat(document.getElementById('sliderSimSpeed').value);
+      
+      const newAlt = parseFloat(document.getElementById('sliderAltitude').value);
+      if(!isOrbitSimRunning) {
+        spaceParams.altitude = newAlt;
+        spaceParams.initAltitude = newAlt;
+      }
+
+      document.getElementById('valThrust').innerText = spaceParams.thrust + " mN";
+      document.getElementById('valMass').innerText = spaceParams.mass + " kg";
+      document.getElementById('valAltitude').innerText = spaceParams.altitude + " km";
+      document.getElementById('valSimSpeed').innerText = spaceParams.simSpeed + "x";
+
+      // Circular orbit velocity v = sqrt(G*M / r)
+      const r = (6371 + spaceParams.altitude) * 1000; // m
+      const GM = 3.986e14;
+      spaceParams.velocity = Math.sqrt(GM / r) / 1000; // km/s
+
+      document.getElementById('dispOrbitAlt').innerText = spaceParams.altitude.toFixed(1) + " km";
+      document.getElementById('dispOrbitVel').innerText = spaceParams.velocity.toFixed(2) + " km/s";
+    }
+
+    function toggleOrbitSim() {
+      isOrbitSimRunning = !isOrbitSimRunning;
+      const btn = document.getElementById('btnOrbitStart');
+      const lbl = document.getElementById('lblOrbitStart');
+      if (isOrbitSimRunning) {
+        btn.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-rose-600 hover:bg-rose-500 text-white shadow-lg flex items-center justify-center gap-2";
+        lbl.innerText = "일시 정지";
+      } else {
+        btn.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center justify-center gap-2";
+        lbl.innerText = "궤도 시뮬레이션 시작";
+      }
+    }
+
+    function resetOrbitSim() {
+      isOrbitSimRunning = false;
+      spaceParams.elapsedDays = 0;
+      spaceParams.altitude = spaceParams.initAltitude;
+      document.getElementById('btnOrbitStart').className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center justify-center gap-2";
+      document.getElementById('lblOrbitStart').innerText = "궤도 시뮬레이션 시작";
+      document.getElementById('dispDeorbitStatus').innerText = "저궤도 선회 중";
+      document.getElementById('dispDeorbitStatus').className = "text-[10px] text-amber-400 block";
+      updateSpaceParams();
+      clearChartData();
+    }
+
+    // Step Orbital Physics Simulation
+    function stepOrbitPhysics(dt) {
+      if(!isOrbitSimRunning) return;
+
+      // Real continuous retrograde ion thrust orbital decay approximation
+      // dh/dt = -2 * (F / m) * (r / v)
+      const thrustNewton = spaceParams.thrust / 1000; // N
+      const massKg = spaceParams.mass;
+      const acceleration = thrustNewton / massKg; // m/s^2
+
+      // Time step in simulated seconds
+      const simSeconds = dt * spaceParams.simSpeed * 86400; // days to sec
+      spaceParams.elapsedDays += dt * spaceParams.simSpeed;
+
+      // Rate of altitude loss (km per day)
+      const decayRatePerDay = (acceleration * 86400 * 2.5) / 1000; // simplified orbital mechanics coefficient
+      spaceParams.altitude -= decayRatePerDay * (dt * spaceParams.simSpeed);
+
+      // Orbital angle increment
+      const orbitalPeriodHours = 1.5; // ~90 min per orbit
+      spaceParams.angle += (Math.PI * 2) * (dt * spaceParams.simSpeed * 24 / orbitalPeriodHours);
+
+      // Atmospheric Re-entry threshold check (~120 km)
+      if (spaceParams.altitude <= 120) {
+        spaceParams.altitude = 120;
+        isOrbitSimRunning = false;
+        document.getElementById('dispDeorbitStatus').innerText = "🔥 대기권 재진입 성공! (소멸)";
+        document.getElementById('dispDeorbitStatus').className = "text-[10px] text-rose-400 font-bold block animate-pulse";
+      }
+
+      updateSpaceParams();
+
+      // Record to chart periodically
+      if (myChart && Math.floor(spaceParams.elapsedDays * 10) % 5 === 0) {
+        myChart.data.labels.push(spaceParams.elapsedDays.toFixed(1) + "일");
+        myChart.data.datasets[0].data.push(spaceParams.altitude.toFixed(1));
+        if (myChart.data.labels.length > 30) {
+          myChart.data.labels.shift();
+          myChart.data.datasets[0].data.shift();
+        }
+        myChart.update('none');
+      }
+    }
+
+    // --- Particle Effects Render ---
+    function spawnIonParticles(startX, startY, endX, endY, count = 2) {
+      for(let i=0; i<count; i++) {
+        ionParticles.push({
+          x: startX,
+          y: startY + (Math.random()-0.5)*6,
+          vx: (endX - startX) * (0.02 + Math.random()*0.03),
+          vy: (Math.random()-0.5)*1.5,
+          life: 1.0,
+          size: Math.random()*2.5 + 1
+        });
+      }
+    }
+
+    function updateAndDrawParticles(targetX, targetY) {
+      for(let i = ionParticles.length-1; i>=0; i--) {
+        let p = ionParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.02;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(56, 189, 248, ${p.life})`;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = "#38bdf8";
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        if (p.life <= 0 || p.x >= targetX) {
+          ionParticles.splice(i, 1);
+        }
+      }
+    }
+
+    // --- Main Render Loop ---
+    function renderCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (currentMode === 1) {
+        renderLabScene();
+      } else {
+        renderSpaceScene();
+      }
+
+      requestAnimationFrame(renderCanvas);
+    }
+
+    // Render Mode 1 (Lab)
+    function renderLabScene() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      // Base Stand / Table
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(80, canvas.height - 40, canvas.width - 160, 15);
+
+      // Emitter Needle Assembly (Left)
+      const emitterX = 180;
+      const emitterY = centerY - 20;
+
+      ctx.fillStyle = "#475569";
+      ctx.fillRect(100, emitterY - 10, 80, 20); // Holder
+      ctx.fillStyle = "#94a3b8";
+      ctx.beginPath();
+      ctx.moveTo(180, emitterY - 3);
+      ctx.lineTo(210, emitterY); // Sharp Needle tip
+      ctx.lineTo(180, emitterY + 3);
+      ctx.fill();
+
+      // Voltage Spark effect at needle tip if power is on
+      const needleTipX = 210;
+      const needleTipY = emitterY;
+
+      if (isLabPowerOn) {
+        ctx.beginPath();
+        ctx.arc(needleTipX, needleTipY, 5 + Math.random()*3, 0, Math.PI*2);
+        ctx.fillStyle = "rgba(34, 211, 238, 0.8)";
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = "#22d3ee";
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // Distance Gap Calculation for visual rendering
+      // Map 1.5 cm - 10 cm to pixel distance 80px - 320px
+      const pxDistance = 80 + (labParams.distance - 1.5) * (240 / 8.5);
+      const targetBaseX = needleTipX + pxDistance;
+
+      // Spawn Ion Wind Particles
+      if (isLabPowerOn) {
+        spawnIonParticles(needleTipX, needleTipY, targetBaseX, emitterY, Math.round(labParams.voltage));
+      }
+      updateAndDrawParticles(targetBaseX, emitterY);
+
+      // Target Space Debris Representation (Scale vs Pendulum)
+      let targetX = targetBaseX;
+      let targetY = emitterY;
+
+      if (measureMethod === 'scale') {
+        // Digital Scale Stand
+        const scaleTopY = canvas.height - 80;
+        ctx.fillStyle = "#0f172a";
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(targetBaseX - 40, scaleTopY, 80, 40);
+        ctx.fillRect(targetBaseX - 40, scaleTopY, 80, 40);
+
+        // Digital Scale Readout LCD
+        ctx.fillStyle = "#0284c7";
+        ctx.font = "bold 11px monospace";
+        ctx.fillText(`${labParams.deltaM.toFixed(3)}g`, targetBaseX - 22, scaleTopY + 24);
+
+        // Stand Rod
+        ctx.fillStyle = "#64748b";
+        ctx.fillRect(targetBaseX - 4, emitterY + 20, 8, scaleTopY - (emitterY + 20));
+
+        targetY = emitterY;
+      } else {
+        // Pendulum Stand (Top Pivot)
+        const pivotY = 50;
+        ctx.fillStyle = "#475569";
+        ctx.fillRect(targetBaseX - 30, pivotY - 10, 60, 10);
+
+        // Calculate Displacement due to Angle
+        const pendulumLength = 160;
+        const rad = (labParams.angle * Math.PI) / 180;
+        targetX = targetBaseX + Math.sin(rad) * pendulumLength;
+        targetY = pivotY + Math.cos(rad) * pendulumLength;
+
+        // String
+        ctx.beginPath();
+        ctx.moveTo(targetBaseX, pivotY);
+        ctx.lineTo(targetX, targetY);
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Angle Arc Indicator
+        if (labParams.angle > 0.1) {
+          ctx.beginPath();
+          ctx.arc(targetBaseX, pivotY, 40, Math.PI/2, Math.PI/2 + rad);
+          ctx.strokeStyle = "#f59e0b";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = "#f59e0b";
+          ctx.font = "10px sans-serif";
+          ctx.fillText(`θ=${labParams.angle.toFixed(1)}°`, targetBaseX + 10, pivotY + 50);
+        }
+      }
+
+      // Draw Debris Target Geometry
+      ctx.save();
+      ctx.translate(targetX, targetY);
+
+      if (labParams.material === 'conductor') {
+        ctx.fillStyle = "#cbd5e1"; // Shiny Metallic Al Foil look
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#e2e8f0";
+      } else {
+        ctx.fillStyle = "#38bdf8"; // Styrofoam / Plastic look
+      }
+
+      if (labParams.shape === 'sphere') {
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI*2);
+        ctx.fill();
+      } else if (labParams.shape === 'flat') {
+        ctx.fillRect(-6, -25, 12, 50);
+      } else { // Irregular Debris
+        ctx.beginPath();
+        ctx.moveTo(-15, -15);
+        ctx.lineTo(10, -20);
+        ctx.lineTo(22, 5);
+        ctx.lineTo(5, 20);
+        ctx.lineTo(-18, 12);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Force Vector Arrow Visualization
+      if (labParams.force > 0.01) {
+        const arrowLen = Math.min(100, labParams.force * 60);
+        drawArrow(ctx, targetX, targetY, targetX + arrowLen, targetY, "#f43f5e", "F_ion");
+      }
+
+      // Dimension Label Distance (d)
+      ctx.beginPath();
+      ctx.moveTo(needleTipX, emitterY + 55);
+      ctx.lineTo(targetBaseX, emitterY + 55);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.5)";
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "11px sans-serif";
+      ctx.fillText(`d = ${labParams.distance.toFixed(1)} cm`, (needleTipX + targetBaseX)/2 - 20, emitterY + 50);
+    }
+
+    // Render Mode 2 (Space Orbit)
+    function renderSpaceScene() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      // Earth Body
+      const earthRadius = 100;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, earthRadius, 0, Math.PI*2);
+      const earthGrad = ctx.createRadialGradient(centerX-20, centerY-20, 10, centerX, centerY, earthRadius);
+      earthGrad.addColorStop(0, '#38bdf8');
+      earthGrad.addColorStop(0.7, '#1e3a8a');
+      earthGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = earthGrad;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = "rgba(56, 189, 248, 0.4)";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Atmosphere Shell (~100-120km)
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, earthRadius + 15, 0, Math.PI*2);
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      // Calculate Orbital Radius on Canvas
+      // Altitude 100km ~ 1000km mapped to 120px ~ 190px
+      const orbitRadius = 115 + (spaceParams.altitude / 1000) * 80;
+
+      // Orbit Path Circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, orbitRadius, 0, Math.PI*2);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.2)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Debris Position
+      const debrisX = centerX + Math.cos(spaceParams.angle) * orbitRadius;
+      const debrisY = centerY + Math.sin(spaceParams.angle) * orbitRadius;
+
+      // Shepherd Satellite Position (Following at offset distance)
+      const offsetAngle = spaceParams.angle - 0.25; // Slight angle behind/ahead
+      const satX = centerX + Math.cos(offsetAngle) * orbitRadius;
+      const satY = centerY + Math.sin(offsetAngle) * orbitRadius;
+
+      // Ion Beam Projection from Satellite to Debris
+      if (isOrbitSimRunning) {
+        ctx.beginPath();
+        ctx.moveTo(satX, satY);
+        ctx.lineTo(debrisX, debrisY);
+        ctx.strokeStyle = "rgba(34, 211, 238, 0.8)";
+        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#22d3ee";
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      // Draw Shepherd Satellite
+      ctx.fillStyle = "#e2e8f0";
+      ctx.fillRect(satX - 6, satY - 6, 12, 12);
+      // Solar Panels
+      ctx.fillStyle = "#0284c7";
+      ctx.fillRect(satX - 16, satY - 2, 10, 4);
+      ctx.fillRect(satX + 6, satY - 2, 10, 4);
+
+      // Draw Space Debris Target
+      ctx.beginPath();
+      ctx.arc(debrisX, debrisY, 6, 0, Math.PI*2);
+      ctx.fillStyle = "#f59e0b";
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = "#f59e0b";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Velocity & Retrograde Force Vectors
+      const tangentAngle = spaceParams.angle + Math.PI/2;
+      const velVx = Math.cos(tangentAngle) * 25;
+      const velVy = Math.sin(tangentAngle) * 25;
+      drawArrow(ctx, debrisX, debrisY, debrisX + velVx, debrisY + velVy, "#10b981", "v");
+
+      if (isOrbitSimRunning) {
+        // Retrograde Ion Thrust opposes velocity
+        drawArrow(ctx, debrisX, debrisY, debrisX - velVx*0.6, debrisY - velVy*0.6, "#f43f5e", "F_thrust");
+      }
+
+      // Step Orbital Physics Step
+      stepOrbitPhysics(0.016);
+    }
+
+    // Canvas Utility: Vector Arrow Helper
+    function drawArrow(ctx, fromX, fromY, toX, toY, color, label) {
+      const headLen = 8;
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const angle = Math.atan2(dy, dx);
+
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      if (label) {
+        ctx.font = "bold 10px monospace";
+        ctx.fillText(label, toX + 5, toY - 5);
+      }
+    }
+
+    // Initialize Page
+    window.onload = function() {
+      initChart();
+      calculateLabPhysics();
+      updateSpaceParams();
+      requestAnimationFrame(renderCanvas);
+    };
+  </script>
+</body>
+</html>
